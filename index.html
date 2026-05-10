@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Otokoç Sigorta Kasko Talep</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#fff3e6;color:#111}
+header{background:linear-gradient(135deg,#ff8c2a,#ff6a00);padding:35px 20px;text-align:center;color:white}
+.header-logo{width:150px;background:white;padding:10px;border-radius:18px;margin-bottom:15px}
+.container{max-width:1000px;margin:30px auto;padding:18px}
+.card{background:white;border-radius:24px;padding:24px;margin-bottom:22px;box-shadow:0 10px 30px rgba(0,0,0,.09)}
+label{display:block;margin-top:15px;font-weight:bold}
+input{width:100%;padding:15px;margin-top:8px;border-radius:14px;border:1px solid #ddd;font-size:16px}
+.packages{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:20px}
+.package{border:2px solid #eee;border-radius:20px;padding:20px;cursor:pointer;background:white;transition:.2s}
+.package:hover{border-color:#ff8c2a;transform:translateY(-2px)}
+.package.selected{border-color:#ff7a00!important;background:#fff3e6!important;box-shadow:0 0 0 3px rgba(255,122,0,.18)}
+.price{font-size:30px;font-weight:800;margin:10px 0 2px}
+.price-sub{display:block;color:#666;font-style:italic;margin-bottom:14px}
+ul{padding-left:20px;line-height:1.7}
+.detail-box{display:none;margin-top:22px;padding:22px;border-radius:18px;background:#fff3e6;border:2px solid #ff7a00}
+button{width:100%;padding:16px;border:none;border-radius:16px;color:white;font-size:17px;font-weight:bold;cursor:pointer;margin-top:15px}
+.green-btn{background:#16a34a}
+.black-btn{background:#111}
+.small{text-align:center;color:#666;font-size:13px;margin-top:18px}
+
+#pdfArea{display:none;width:794px;min-height:1123px;background:white;padding:28px;font-family:Arial,sans-serif;color:#111;font-size:12px}
+.pdf-render-mode header,.pdf-render-mode .container{display:none}
+.pdf-render-mode #pdfArea{display:block;margin:0 auto}
+
+.policy-header{display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid #ff8c2a;padding-bottom:14px}
+.policy-logo{display:flex;align-items:center;gap:14px}
+.policy-logo img{width:90px}
+.policy-logo h2{margin:0;font-size:22px}
+.policy-logo p{margin:4px 0 0;font-size:13px}
+.policy-title{text-align:right}
+.policy-title h1{margin:0;font-size:28px}
+.policy-title h2{margin:5px 0 0;font-size:20px;font-weight:400}
+.policy-top-info{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.policy-top-info div{border:1px solid #ddd;border-radius:12px;padding:11px}
+.policy-top-info p{margin:6px 0 0;font-weight:bold}
+.policy-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.policy-card{border:1px solid #ddd;border-radius:14px;padding:12px;background:white}
+.policy-card-title{background:#111;color:white;padding:9px 12px;border-radius:12px 12px 0 0;margin:-12px -12px 12px;font-weight:bold}
+.green-card{background:#f0fff5;border-color:#16a34a}
+.green-title{background:#16a34a}
+.green-card h2{color:#16a34a;margin:6px 0;font-size:23px}
+.green-card h1{color:#16a34a;font-size:30px;margin:8px 0}
+.full{margin-top:12px}
+#pdfDetails ul{columns:2;font-size:11px;line-height:1.55}
+.info-card{margin-top:12px;display:flex;justify-content:space-between;gap:16px}
+.fake-qr{width:75px;height:75px;border:3px solid #111;display:flex;align-items:center;justify-content:center;font-weight:bold}
+.policy-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.signature{font-family:cursive;font-size:25px;color:#1d4ed8;margin-top:18px}
+.policy-footer{margin-top:16px;background:#111;color:white;padding:13px;border-radius:12px;display:flex;justify-content:space-between}
+
+.pdf-logo-text{
+  width:90px;
+  height:55px;
+  border-radius:10px;
+  background:#fff3e6;
+  border:2px solid #ff8c2a;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-weight:800;
+  font-size:13px;
+  color:#111;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+  <img src="logo.png" class="header-logo" alt="Otokoç Sigorta">
+  <h1>Kasko & Sigorta Talep Sistemi</h1>
+  <p>Kiralık aracınız için güvence paketinizi seçin</p>
+</header>
+
+<div class="container">
+
+<div class="card">
+  <h2>Müşteri Bilgileri</h2>
+
+  <label>Ad Soyad *</label>
+  <input type="text" id="fullName" placeholder="Ad Soyad">
+
+  <label>TC Kimlik Numarası *</label>
+  <input type="text" id="tcNumber" placeholder="11122233344" maxlength="11">
+
+  <label>Araç Marka Model *</label>
+  <input type="text" id="carModel" placeholder="Fiat Egea">
+</div>
+
+<div class="card">
+  <h2>Kasko / Sigorta Paketi Seçin</h2>
+
+  <div class="packages">
+
+    <div class="package" data-package="Ekonomik Paket" data-price="250,00 TL" data-limit="25.000 TL">
+      <h3>Ekonomik Paket</h3>
+      <div class="price">250,00 TL</div>
+      <span class="price-sub">(25.000 TL)</span>
+      <ul><li>Temel hasar güvencesi</li><li>Limitli servis desteği</li><li>Manuel onay süreci</li></ul>
+    </div>
+
+    <div class="package" data-package="Standart Paket" data-price="350,00 TL" data-limit="35.000 TL">
+      <h3>Standart Paket</h3>
+      <div class="price">350,00 TL</div>
+      <span class="price-sub">(35.000 TL)</span>
+      <ul><li>Çarpma / çarpışma</li><li>Cam kırılması</li><li>Mini onarım</li></ul>
+    </div>
+
+    <div class="package" data-package="Genişletilmiş Paket" data-price="500,00 TL" data-limit="50.000 TL">
+      <h3>Genişletilmiş Paket</h3>
+      <div class="price">500,00 TL</div>
+      <span class="price-sub">(50.000 TL)</span>
+      <ul><li>Geniş kapsamlı kasko</li><li>Yol yardım</li><li>İkame araç desteği</li></ul>
+    </div>
+
+    <div class="package" data-package="Premium Paket" data-price="750,00 TL" data-limit="75.000 TL">
+      <h3>Premium Paket</h3>
+      <div class="price">750,00 TL</div>
+      <span class="price-sub">(75.000 TL)</span>
+      <ul><li>En geniş güvence paketi</li><li>Yüksek teminat limiti</li><li>Öncelikli işlem desteği</li></ul>
+    </div>
+
+  </div>
+
+  <div class="detail-box" id="detailBox">
+    <h3 id="detailTitle">Paket Detayları</h3>
+    <div id="detailContent"></div>
+  </div>
+
+  <button type="button" class="green-btn" id="whatsappBtn">WhatsApp ile Talebi Gönder</button>
+  <button type="button" class="black-btn" id="clearBtn">Formu Temizle</button>
+</div>
+
+<p class="small">
+Bu belge ön talep formudur. Kesin ödeme bilgisi yetkili personel tarafından iletilecektir.
+</p>
+
+</div>
+
+<div id="pdfArea">
+
+  <div class="policy-header">
+    <div class="policy-logo">
+    <div class="pdf-logo-text">OTOKOÇ<br>SİGORTA</div>      <div>
+        <h2>OTOKOÇ SİGORTA</h2>
+        <p>Aracılık Hizmetleri A.Ş.</p>
+      </div>
+    </div>
+
+    <div class="policy-title">
+      <h1>KASKO & SİGORTA</h1>
+      <h2>POLİÇE TALEP FORMU</h2>
+    </div>
+  </div>
+
+  <div class="policy-top-info">
+    <div><strong>TARİH</strong><p id="pdfDate"></p></div>
+    <div><strong>REFERANS NO</strong><p id="pdfRef"></p></div>
+    <div><strong>POLİÇE TÜRÜ</strong><p>Kasko / Sigorta Talep Formu</p></div>
+  </div>
+
+  <div class="policy-grid">
+    <div class="policy-card">
+      <div class="policy-card-title">MÜŞTERİ BİLGİLERİ</div>
+      <p><strong>Ad Soyad:</strong> <span id="pdfName"></span></p>
+      <p><strong>TC Kimlik:</strong> <span id="pdfTc"></span></p>
+      <p><strong>Araç Marka Model:</strong> <span id="pdfCarModel"></span></p>
+      <p><strong>Talep Kanalı:</strong> Online Form</p>
+    </div>
+
+    <div class="policy-card green-card">
+      <div class="policy-card-title green-title">SEÇİLEN PAKET</div>
+      <h2 id="pdfPackage"></h2>
+      <p>Toplam Tutar</p>
+      <h1 id="pdfPrice"></h1>
+      <small>Teminat Limiti: <span id="pdfLimit"></span></small>
+    </div>
+  </div>
+
+  <div class="policy-card full">
+    <div class="policy-card-title">SEÇİLEN PAKET İÇERİĞİ</div>
+    <div id="pdfDetails"></div>
+  </div>
+
+  <div class="policy-card info-card">
+    <div>
+      <h3>BİLGİLENDİRME</h3>
+      <p>Sayın Sigortalımız,
+5684 Sayılı Sigortacılık Kanunu, ilgili yönetmelikler ve sigorta şirketlerinin teknik uygulama esasları kapsamında, kasko sigortası poliçeleri kısa süreli (günlük, haftalık veya aylık) olarak düzenlenememekte olup, yıllık süreli olarak tanzim edilmektedir.
+Bu doğrultuda düzenlenen kasko sigorta poliçeleri, sigorta şirketi sistemlerine ve resmi kayıt süreçlerine 1 yıllık poliçe süresi üzerinden giriş yapılacak şekilde oluşturulmaktadır..</p>
+      <p>Bu belge bir ön talep formudur. Kesin ödeme bilgisi yetkili personel tarafından iletilecektir.</p>
+    </div>
+    <div><div class="fake-qr">QR</div></div>
+  </div>
+
+  <div class="policy-bottom">
+    <div class="policy-card"><h3>İLETİŞİM</h3><p>0535 913 68 55</p><p>otokocsigorta@online.com</p></div>
+    <div class="policy-card"><h3>NOT</h3><p>Talebiniz tarafımıza başarıyla ulaşmıştır.</p></div>
+    <div class="policy-card"><h3>ONAY / İMZA</h3><div class="signature">Otokoç Sigorta</div></div>
+  </div>
+
+  <div class="policy-footer">
+    <strong>OTOKOÇ SİGORTA</strong>
+    <span>Güvenli sürüş, güçlü yarınlar.</span>
+  </div>
+
+</div>
+
+<script>
+const WHATSAPP_NUMBER = "905348602248";
+
+/* Supabase bilgilerini buraya yaz */
+const SUPABASE_URL = "https://ijxtrulwabiroriujwip.supabase.co";
+const SUPABASE_KEY = "sb_publishable_jt8EdUUUIyvgkTyXvGo12A_G8POvqN7";
+
+let client = null;
+if(SUPABASE_URL && SUPABASE_KEY){
+  client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+let selectedPackage = "";
+let selectedPrice = "";
+let selectedLimit = "";
+let selectedDetails = "";
+
+function value(id){
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : "";
+}
+
+function getDetails(packageName){
+  if(packageName === "Ekonomik Paket"){
+    return `<ul><li>Temel hasar güvencesi</li><li>Çarpma / çarpışma ön değerlendirme</li><li>Limitli servis desteği</li><li>Manuel onay süreci</li></ul>`;
+  }
+
+  if(packageName === "Standart Paket"){
+    return `<ul><li>Çarpma ve çarpışma desteği</li><li>Cam kırılması desteği</li><li>Mini onarım kapsamı</li><li>Yol yardım hizmeti</li></ul>`;
+  }
+
+  if(packageName === "Genişletilmiş Paket"){
+    return `<ul><li>Geniş kapsamlı kasko desteği</li><li>Cam, anahtar ve mini onarım</li><li>Yol yardım hizmeti</li><li>İkame araç desteği</li></ul>`;
+  }
+
+  if(packageName === "Premium Paket"){
+    return `<ul><li>En geniş güvence paketi</li><li>Yüksek teminat limiti</li><li>Öncelikli işlem desteği</li><li>Genişletilmiş servis ağı</li><li>Yol yardım ve ikame araç desteği</li></ul>`;
+  }
+
+  return "";
+}
+
+document.querySelectorAll(".package").forEach(function(card){
+  card.addEventListener("click", function(){
+    selectedPackage = card.dataset.package;
+    selectedPrice = card.dataset.price;
+    selectedLimit = card.dataset.limit;
+    selectedDetails = getDetails(selectedPackage);
+
+    document.querySelectorAll(".package").forEach(function(item){
+      item.classList.remove("selected");
+    });
+
+    card.classList.add("selected");
+
+    document.getElementById("detailBox").style.display = "block";
+    document.getElementById("detailTitle").innerText = selectedPackage + " Kapsamı";
+    document.getElementById("detailContent").innerHTML = selectedDetails;
+  });
+});
+
+function validateForm(){
+  if(!value("fullName") || !value("tcNumber") || !value("carModel")){
+    alert("Lütfen ad soyad, TC kimlik numarası ve araç marka model bilgisini doldurun.");
+    return false;
+  }
+
+  if(value("tcNumber").length !== 11){
+    alert("TC Kimlik numarası 11 haneli olmalıdır.");
+    return false;
+  }
+
+  if(!selectedPackage){
+    alert("Lütfen bir kasko / sigorta paketi seçin.");
+    return false;
+  }
+
+  return true;
+}
+
+function fillPdf(){
+  document.getElementById("pdfRef").innerText = "KSP-" + Date.now();
+  document.getElementById("pdfName").innerText = value("fullName");
+  document.getElementById("pdfTc").innerText = value("tcNumber");
+  document.getElementById("pdfCarModel").innerText = value("carModel");
+  document.getElementById("pdfDate").innerText = new Date().toLocaleString("tr-TR");
+  document.getElementById("pdfPackage").innerText = selectedPackage;
+  document.getElementById("pdfPrice").innerText = selectedPrice;
+  document.getElementById("pdfLimit").innerText = selectedLimit;
+  document.getElementById("pdfDetails").innerHTML = selectedDetails;
+}
+
+function cleanFileName(text){
+  return text.toLowerCase()
+    .replaceAll("ı","i").replaceAll("ğ","g").replaceAll("ü","u")
+    .replaceAll("ş","s").replaceAll("ö","o").replaceAll("ç","c")
+    .replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"");
+}
+
+async function createPdfBlob(){
+  fillPdf();
+  const pdfArea = document.getElementById("pdfArea");
+  document.body.classList.add("pdf-render-mode");
+
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  const blob = await html2pdf()
+    .set({
+      margin:0,
+      image:{type:"jpeg",quality:1},
+      html2canvas:{scale:2,useCORS:true,scrollY:0},
+      jsPDF:{unit:"px",format:[794,1123],orientation:"portrait"}
+    })
+    .from(pdfArea)
+    .outputPdf("blob");
+
+  document.body.classList.remove("pdf-render-mode");
+  return blob;
+}
+
+async function sendWhatsApp(){
+  if(!validateForm()) return;
+  if(client){
+  try{
+
+    await client
+      .from("insurance_forms")
+      .insert([
+        {
+          full_name: value("fullName"),
+          tc_number: value("tcNumber"),
+          car_model: value("carModel"),
+          package_name: selectedPackage,
+          package_price: selectedPrice,
+          package_limit: selectedLimit
+        }
+      ]);
+
+  }catch(error){
+    console.log(error);
+    alert("Supabase kayıt hatası oluştu.");
+  }
+}
+
+  const btn = document.getElementById("whatsappBtn");
+  btn.disabled = true;
+  btn.innerText = "Talep hazırlanıyor...";
+
+  let pdfUrl = "";
+
+  try{
+    const pdfBlob = await createPdfBlob();
+    const fileName = cleanFileName(value("fullName")) + "-" + Date.now() + "-kasko-talep.pdf";
+
+    if(client){
+      const { error: uploadError } = await client.storage
+        .from("pdfs")
+        .upload(fileName, pdfBlob, { contentType:"application/pdf" });
+
+      if(uploadError) throw uploadError;
+
+      const { data: publicData } = client.storage
+        .from("pdfs")
+        .getPublicUrl(fileName);
+
+      pdfUrl = publicData.publicUrl;
+
+      await client.from("insurance_forms").insert([{
+        full_name:value("fullName"),
+        tc_number:value("tcNumber"),
+        car_model:value("carModel"),
+        selected_package:selectedPackage,
+        selected_price:selectedPrice,
+        selected_limit:selectedLimit,
+        policy_pdf_url:pdfUrl,
+        status:"pdfUrl"
+      }]);
+    }
+
+    const message =
+`Yeni Kasko / Sigorta Poliçe Talebi
+
+Ad Soyad:
+${value("fullName")}
+
+TC Kimlik:
+${value("tcNumber")}
+
+Araç Marka Model:
+${value("carModel")}
+
+Seçilen Paket:
+${selectedPackage}
+
+Talep Tutarı:
+${selectedPrice}
+
+Teminat Limiti:
+${selectedLimit}
+
+${pdfUrl ? "PDF Poliçe Linki:\n" + pdfUrl : "PDF sistemi için Supabase bilgileri henüz eklenmemiş."}`;
+
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`,"_blank");
+
+  }catch(error){
+    alert("Hata oluştu: " + error.message);
+    console.log(error);
+  }
+
+  btn.disabled = false;
+  btn.innerText = "WhatsApp ile Talebi Gönder";
+}
+
+function clearForm(){
+  document.getElementById("fullName").value = "";
+  document.getElementById("tcNumber").value = "";
+  document.getElementById("carModel").value = "";
+
+  selectedPackage = "";
+  selectedPrice = "";
+  selectedLimit = "";
+  selectedDetails = "";
+
+  document.querySelectorAll(".package").forEach(function(item){
+    item.classList.remove("selected");
+  });
+
+  document.getElementById("detailBox").style.display = "none";
+  document.getElementById("detailContent").innerHTML = "";
+}
+
+document.getElementById("whatsappBtn").addEventListener("click", sendWhatsApp);
+document.getElementById("clearBtn").addEventListener("click", clearForm);
+</script>
+
+</body>
+</html>
