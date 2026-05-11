@@ -424,8 +424,7 @@ ${selectedLimit}
 
 ${pdfUrl ? "PDF Poliçe Linki:\n" + pdfUrl : "PDF sistemi için Supabase bilgileri henüz eklenmemiş."}`;
 
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`,"_blank");
-
+window.location.href = `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(message)}`;
   }catch(error){
     alert("Hata oluştu: " + error.message);
     console.log(error);
